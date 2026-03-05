@@ -10,7 +10,7 @@ from datetime import datetime
 # ---------------------------
 # CONFIG
 # ---------------------------
-API_URL = "http://127.0.0.1:8000/predict"
+API_URL = "https://accent-backend.onrender.com/predict"
 st.set_page_config(page_title="AccentAI Pro", page_icon="🎙", layout="wide")
 
 # ---------------------------
@@ -406,13 +406,14 @@ def show_waveform(audio_bytes):
         fig.patch.set_facecolor('#0a1520')
         ax.set_facecolor('#0a1520')
         ax.plot(y, color="#00c4f0", linewidth=0.6, alpha=0.85)
+        # Gradient-ish fill
         ax.fill_between(range(len(y)), y, alpha=0.12, color="#00c4f0")
         ax.axis('off')
         plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
         st.pyplot(fig)
         plt.close(fig)
-    except Exception as e:
-        st.warning(f"Could not render waveform: {str(e)}")
+    except:
+        pass
 
 def get_flag(accent):
     return {"Indian": "🇮🇳", "UK": "🇬🇧", "US": "🇺🇸"}.get(accent, "🌐")
@@ -421,22 +422,14 @@ def show_result(result, key_prefix=""):
     if "message" in result:
         st.warning(result["message"])
         return
-
-    # Check for expected keys
-    if "predicted_accent" not in result or "confidence_score" not in result:
-        st.error(f"⚠ Unexpected response format: {result}")
-        return
-
     accent = result["predicted_accent"]
     confidence = result["confidence_score"]
     flag = get_flag(accent)
-
     st.session_state.history.append({
         "accent": accent,
         "confidence": confidence,
         "time": datetime.now().strftime("%H:%M:%S")
     })
-
     st.markdown(f"""
     <div class="result-card">
         <div class="result-flag">{flag}</div>
@@ -556,16 +549,14 @@ elif st.session_state.page == "dashboard" and st.session_state.logged_in:
             show_waveform(audio_bytes)
             st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
             if st.button("Analyze Audio", key="upload_btn"):
-                with st.spinner("Waking up server & analyzing... (may take ~60s on first use)"):
+                with st.spinner("Analyzing..."):
                     try:
                         files = {"file": ("audio.wav", audio_bytes, "audio/wav")}
-                        response = requests.post(API_URL, files=files, timeout=120)
+                        response = requests.post(API_URL, files=files)
                         if response.status_code == 200:
                             show_result(response.json(), key_prefix="upload")
-                        else:
-                            st.error(f"⚠ Server error {response.status_code}: {response.text}")
-                    except Exception as e:
-                        st.error(f"⚠ Error: {str(e)}")
+                    except:
+                        st.error("⚠ Could not connect to prediction service.")
         st.markdown('</div>', unsafe_allow_html=True)
 
     # --- RECORD AUDIO ---
@@ -579,16 +570,14 @@ elif st.session_state.page == "dashboard" and st.session_state.logged_in:
             show_waveform(audio["bytes"])
             st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
             if st.button("Analyze Recording", key="record_btn"):
-                with st.spinner("Waking up server & analyzing... (may take ~60s on first use)"):
+                with st.spinner("Analyzing..."):
                     try:
                         files = {"file": ("live.wav", audio["bytes"], "audio/wav")}
-                        response = requests.post(API_URL, files=files, timeout=120)
+                        response = requests.post(API_URL, files=files)
                         if response.status_code == 200:
                             show_result(response.json(), key_prefix="record")
-                        else:
-                            st.error(f"⚠ Server error {response.status_code}: {response.text}")
-                    except Exception as e:
-                        st.error(f"⚠ Error: {str(e)}")
+                    except:
+                        st.error("⚠ Could not connect to prediction service.")
         st.markdown('</div>', unsafe_allow_html=True)
 
     # ── History Section ──
