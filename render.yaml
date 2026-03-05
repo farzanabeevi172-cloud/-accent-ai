@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: accent-backend
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+```
+5. Press **Ctrl+S** to save
+
+That's it. It should appear in your file list like this:
+```
+accent-ai/
+├── main.py
+├── app.py
+├── requirements.txt
+├── render.yaml       ← this one
+├── accent_model.pkl
+└── ...
