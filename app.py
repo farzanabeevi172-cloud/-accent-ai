@@ -10,7 +10,7 @@ from datetime import datetime
 # ---------------------------
 # CONFIG
 # ---------------------------
-API_URL = "http://127.0.0.1:8000/predict"
+API_URL = "https://accent-ai-3es5.onrender.com/predict"
 st.set_page_config(page_title="AccentAI Pro", page_icon="🎙", layout="wide")
 
 # ---------------------------
