@@ -24,6 +24,8 @@ if "users" not in st.session_state:
     st.session_state.users = {"test": "test"}
 if "history" not in st.session_state:
     st.session_state.history = []
+if "recorded_audio" not in st.session_state:
+    st.session_state.recorded_audio = None
 
 # ---------------------------
 # STYLING
@@ -559,7 +561,7 @@ elif st.session_state.page == "dashboard" and st.session_state.logged_in:
                 with st.spinner("Waking up server & analyzing... (may take ~60s on first use)"):
                     try:
                         files = {"file": ("audio.wav", audio_bytes, "audio/wav")}
-                        response = requests.post(API_URL, files=files, timeout=120)
+                        response = requests.post(API_URL, files=files, timeout=300)
                         if response.status_code == 200:
                             show_result(response.json(), key_prefix="upload")
                         else:
@@ -568,27 +570,34 @@ elif st.session_state.page == "dashboard" and st.session_state.logged_in:
                         st.error(f"⚠ Error: {str(e)}")
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # --- RECORD AUDIO ---
+   # --- RECORD AUDIO ---
     with col2:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         st.markdown('<div class="section-header">🎙 Record Live</div>', unsafe_allow_html=True)
         st.markdown('<div style="color:#4a6a8a; font-size:0.85rem; margin-bottom:1rem;">Click Start to begin recording your voice</div>', unsafe_allow_html=True)
+
         audio = mic_recorder(start_prompt="▶ Start Recording", stop_prompt="⏹ Stop Recording", key="recorder")
+
+        # Save to session state so it persists on rerun
         if audio:
-            st.audio(audio["bytes"])
-            show_waveform(audio["bytes"])
+            st.session_state.recorded_audio = audio
+
+        if "recorded_audio" in st.session_state and st.session_state.recorded_audio:
+            st.audio(st.session_state.recorded_audio["bytes"])
+            show_waveform(st.session_state.recorded_audio["bytes"])
             st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
             if st.button("Analyze Recording", key="record_btn"):
                 with st.spinner("Waking up server & analyzing... (may take ~60s on first use)"):
                     try:
-                        files = {"file": ("live.wav", audio["bytes"], "audio/wav")}
-                        response = requests.post(API_URL, files=files, timeout=120)
+                        files = {"file": ("live.wav", st.session_state.recorded_audio["bytes"], "audio/wav")}
+                        response = requests.post(API_URL, files=files, timeout=300)
                         if response.status_code == 200:
                             show_result(response.json(), key_prefix="record")
                         else:
                             st.error(f"⚠ Server error {response.status_code}: {response.text}")
                     except Exception as e:
                         st.error(f"⚠ Error: {str(e)}")
+
         st.markdown('</div>', unsafe_allow_html=True)
 
     # ── History Section ──
